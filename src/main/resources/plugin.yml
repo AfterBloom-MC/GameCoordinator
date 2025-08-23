@@ -1,0 +1,9 @@
+name: GameCoordinator
+version: '1.0-SNAPSHOT'
+main: dev.errin.gameCoordinator.GameCoordinator
+api-version: '1.21'
+prefix: AdvancedSkills
+load: STARTUP
+authors: [ AdvancedPlugins ]
+description: Most advanced skills plugin for Minecraft
+website: https://advancedplugins.net/item/AdvancedSkills.191
