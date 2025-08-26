@@ -1,9 +1,9 @@
 name: GameCoordinator
 version: '1.0-SNAPSHOT'
-main: dev.errin.gameCoordinator.GameCoordinator
+main: net.afterbloom.gameCoordinator.GameCoordinator
 api-version: '1.21'
-prefix: AdvancedSkills
+prefix: GameCoordinator
 load: STARTUP
-authors: [ AdvancedPlugins ]
-description: Most advanced skills plugin for Minecraft
-website: https://advancedplugins.net/item/AdvancedSkills.191
+authors: [ErrinDev]
+description: GameCoordinator for AfterBloom MC Minigames
+website: https://www.afterbloom.net
