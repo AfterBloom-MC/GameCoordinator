@@ -1,0 +1,9 @@
+name: GameCoordinator
+version: '1.0-SNAPSHOT'
+main: net.afterbloom.gameCoordinator.GameCoordinator
+api-version: '1.21'
+prefix: GameCoordinator
+load: STARTUP
+authors: [ErrinDev]
+description: GameCoordinator for AfterBloom MC Minigames
+website: https://www.afterbloom.net

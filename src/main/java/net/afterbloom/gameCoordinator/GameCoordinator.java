@@ -1,6 +1,7 @@
-package dev.errin.gameCoordinator;
+package net.afterbloom.gameCoordinator;
 
 import org.bukkit.plugin.java.JavaPlugin;
+import net.afterbloom.gameCoordinator.jedis.Jedis;
 import java.util.logging.Logger;
 
 /*
@@ -11,20 +12,30 @@ Everything
 
 public final class GameCoordinator extends JavaPlugin {
 
-    private Logger logger;
+    private static Logger logger;
 
     @Override
     public void onEnable() {
-        String DiscoverChannel = "MinigameDiscoverChannel";
-        String AsignChannel = "MingameAssignChannel";
-
         logger = getLogger();
         // Plugin startup logic
         logger.info("GameCoordinator is Booting!");
 
+        logger.info("connecting to Redis server");
+        String redisIp = "123.4.5.6";
+        int redisPort = 1234;
+
+        try (Jedis redis = new Jedis(redisIp, redisPort)) {
+            redis.ping();
+            logger.info("Connected to Redis");
+        } catch (Exception e) {
+            logger.severe("Failed to connect to Redis server! Is it running? Are the details correct in config.yml?");
+            String error = e.getMessage();
+            Utils.warnShutdown(error);
+        }
+
+
         logger.info("Attempting to contact minigames servers");
         // Send out ping and Asynchronously await response
-
         logger.info("Listening for new servers....");
         // Set up Asynchronous listener for plugin messages
 
@@ -46,4 +57,9 @@ public final class GameCoordinator extends JavaPlugin {
 
         logger.info("GameCoordinator has finished shutting down!");
     }
+
+    public static Logger getLoggerInstance() {
+        return logger;
+    }
+
 }
