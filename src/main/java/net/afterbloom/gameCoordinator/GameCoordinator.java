@@ -1,7 +1,7 @@
 package net.afterbloom.gameCoordinator;
 
 import org.bukkit.plugin.java.JavaPlugin;
-import net.afterbloom.gameCoordinator.jedis.Jedis;
+
 import java.util.logging.Logger;
 
 /*
@@ -16,23 +16,20 @@ public final class GameCoordinator extends JavaPlugin {
 
     @Override
     public void onEnable() {
+        Utils.init(this);
+        saveDefaultConfig();
         logger = getLogger();
         // Plugin startup logic
         logger.info("GameCoordinator is Booting!");
 
         logger.info("connecting to Redis server");
-        String redisIp = "123.4.5.6";
-        int redisPort = 1234;
-
-        try (Jedis redis = new Jedis(redisIp, redisPort)) {
-            redis.ping();
-            logger.info("Connected to Redis");
-        } catch (Exception e) {
-            logger.severe("Failed to connect to Redis server! Is it running? Are the details correct in config.yml?");
-            String error = e.getMessage();
-            Utils.warnShutdown(error);
+        Exception e = Redis.init();
+        if (e == null) {
+            logger.info("succesfully connected to Redis");
+        } else {
+            logger.severe("Failed to connect to redis with error: " + e.toString());
+            Utils.shutdown(e.getMessage());
         }
-
 
         logger.info("Attempting to contact minigames servers");
         // Send out ping and Asynchronously await response
@@ -52,8 +49,7 @@ public final class GameCoordinator extends JavaPlugin {
         logger.info("Saving Data");
         //save all leaderboards, stats etc
 
-        logger.info("Resetting to default state");
-        //reset all persistent data for next time, eg events mode state
+
 
         logger.info("GameCoordinator has finished shutting down!");
     }

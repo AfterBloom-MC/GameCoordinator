@@ -7,3 +7,5 @@ load: STARTUP
 authors: [ErrinDev]
 description: GameCoordinator for AfterBloom MC Minigames
 website: https://www.afterbloom.net
+libraries:
+  - redis.clients:jedis:6.1.0
