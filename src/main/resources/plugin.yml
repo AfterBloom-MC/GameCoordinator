@@ -9,3 +9,9 @@ description: GameCoordinator for AfterBloom MC Minigames
 website: https://www.afterbloom.net
 libraries:
   - redis.clients:jedis:6.1.0
+commands:
+  coordinator:
+    description: Manage or the GameCoordinator
+    usage: /coordinator <testPing|servers>
+    permission: minigames.manage
+    permission-message: You do not have permission to use this command.

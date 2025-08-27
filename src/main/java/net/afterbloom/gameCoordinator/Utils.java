@@ -22,7 +22,7 @@ public class Utils {
     }
 
     public static void shutdown(String error) {
-        if (hasShutdown) return;  // <--- prevents double execution
+        if (hasShutdown) return;  //prevents double execution
         hasShutdown = true;
         Logger logger = GameCoordinator.getLoggerInstance();
         Bukkit.getPluginManager().disablePlugin(plugin);
@@ -35,22 +35,8 @@ public class Utils {
         //in our case, this is an **essential** plugin. I want to know it has shut down.. immediately
 
         //send webhook to warn of plugin failure
-        String password = plugin.getConfig().getString("webhookMessage");
-        String port = plugin.getConfig().getString("webhookUrl");
-
-        String message = plugin.getConfig().getString("webhookMessage");
-        String webhookUrl = plugin.getConfig().getString("webhookUrl");
-
-        String jsonPayload = "{\"content\":\"" + message + "\"}";
-
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(webhookUrl))
-                .header("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString(jsonPayload, StandardCharsets.UTF_8))
-                .build();
-
-        client.sendAsync(request, HttpResponse.BodyHandlers.discarding());
-
+        String message = plugin.getConfig().getString("webhookWarnMessage");
+        Utils.sendDiscordWebhook(message);
     }
 
     public static URI loadRedisDetails() {
@@ -77,5 +63,19 @@ public class Utils {
 
     private static boolean isValidString(Object obj) {
         return obj instanceof String && !((String) obj).isEmpty();
+    }
+
+    public static void sendDiscordWebhook(String message){
+        String webhookUrl = plugin.getConfig().getString("webhookUrl");
+
+        String jsonPayload = "{\"content\":\"" + message + "\"}";
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(webhookUrl))
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(jsonPayload, StandardCharsets.UTF_8))
+                .build();
+
+        client.sendAsync(request, HttpResponse.BodyHandlers.discarding());
     }
 }

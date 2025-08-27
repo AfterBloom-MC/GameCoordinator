@@ -5,4 +5,5 @@ redisPassword: "password"
 
 #Webhook config, for notifications when the plugin shuts down
 webhookUrl: "https://discord.com/api/webhooks/1234/blabla"
-webhookMessage: "<@USERID> GameCoordinator has shut down!"
+#webhook message for warning on plugin shutdown (will not run on server shutdown)
+webhookWarnMessage: "<@USERID> GameCoordinator has shut down!"

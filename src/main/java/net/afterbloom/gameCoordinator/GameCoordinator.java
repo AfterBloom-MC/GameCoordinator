@@ -22,8 +22,12 @@ public final class GameCoordinator extends JavaPlugin {
         // Plugin startup logic
         logger.info("GameCoordinator is Booting!");
 
+        CoordinatorCommand coordinator = new CoordinatorCommand(this);
+        this.getCommand("coordinator").setExecutor(coordinator);
+        this.getCommand("coordinator").setTabCompleter(coordinator);
+
         logger.info("connecting to Redis server");
-        Exception e = Redis.init();
+        Exception e = Redis.init(this);
         if (e == null) {
             logger.info("succesfully connected to Redis");
         } else {
@@ -31,9 +35,10 @@ public final class GameCoordinator extends JavaPlugin {
             Utils.shutdown(e.getMessage());
         }
 
-        logger.info("Attempting to contact minigames servers");
+
+        //logger.info("Attempting to contact minigames servers");
         // Send out ping and Asynchronously await response
-        logger.info("Listening for new servers....");
+        //logger.info("Listening for new servers....");
         // Set up Asynchronous listener for plugin messages
 
     }
@@ -43,10 +48,10 @@ public final class GameCoordinator extends JavaPlugin {
         // Plugin shutdown logic
         logger.info("GameCoordinator is Shutting down!");
 
-        logger.info("Contacting minigames servers");
+        //logger.info("Contacting minigames servers");
         //tell minigames server to go dormant & clean up (leave events mode if in it)
 
-        logger.info("Saving Data");
+        //logger.info("Saving Data");
         //save all leaderboards, stats etc
 
 
