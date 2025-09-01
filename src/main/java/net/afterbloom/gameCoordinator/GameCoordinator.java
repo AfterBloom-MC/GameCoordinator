@@ -3,10 +3,12 @@ package net.afterbloom.gameCoordinator;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.logging.Logger;
+import com.google.gson.JsonObject;
 
 /*
 To do:
-Everything
+Everything else
+store servers that respond to initial ping
  */
 
 
@@ -27,19 +29,44 @@ public final class GameCoordinator extends JavaPlugin {
         this.getCommand("coordinator").setTabCompleter(coordinator);
 
         logger.info("connecting to Redis server");
-        Exception e = Redis.init(this);
-        if (e == null) {
+        Exception initResult = Redis.init(this);
+        if (initResult == null) {
             logger.info("succesfully connected to Redis");
         } else {
-            logger.severe("Failed to connect to redis with error: " + e.toString());
-            Utils.shutdown(e.getMessage());
+            logger.severe("Failed to connect to redis with error: " + initResult.getMessage());
+            Utils.shutdown(initResult.toString());
+            return;
         }
 
 
-        //logger.info("Attempting to contact minigames servers");
+        logger.info("Attempting to contact minigames servers");
+
+        String discoverChannel = getConfig().getString("discoverChannel");
+
+        try {
+            Redis.subscribe(discoverChannel);
+            logger.info("Succesfully subscribed to discoverChannel");
+        } catch (Exception e) {
+            logger.severe("Failed to subscribe to "+ discoverChannel + " Error:  " + e.getMessage());
+            Utils.shutdown(e.toString());
+        }
+
+        JsonObject message = new JsonObject();
+        message.addProperty("senderId", "coord-01");
+        message.addProperty("recieverId", "game-*");
+        message.addProperty("function", "announceCoordinatorStart");
+
+        try {
+            Redis.publish("CoordinatorAnnounce", message.toString());
+            logger.info("Succesfully sent Announcement Ping");
+        } catch (Exception e) {
+            logger.severe("Failed to announce gameCoordinator" + e.getMessage());
+            Utils.shutdown(e.toString());
+        }
         // Send out ping and Asynchronously await response
         //logger.info("Listening for new servers....");
         // Set up Asynchronous listener for plugin messages
+        // teddan is stinky
 
     }
 

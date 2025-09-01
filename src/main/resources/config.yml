@@ -4,6 +4,22 @@ redisPort: "1234"
 redisPassword: "password"
 
 #Webhook config, for notifications when the plugin shuts down
+
+#webhook url from discord settings, this is where all notifications will be sent to
 webhookUrl: "https://discord.com/api/webhooks/1234/blabla"
 #webhook message for warning on plugin shutdown (will not run on server shutdown)
 webhookWarnMessage: "<@USERID> GameCoordinator has shut down!"
+
+
+#what number will this coordinator server be known as by other servers? (two digits is recommended)
+serverId: "01"
+
+
+#Connection config, configurable channels that the plugin will talk to minigame servers on
+
+#The channel that the Coordinator will announce itself on when booting, and listen on for any servers responding/booting up
+discoverChannel: "discover"
+#The chanel that will be used for normal communications
+runChannel: "run"
+
+#sera is smelly
