@@ -5,6 +5,7 @@ AfterBloom MC's solution to managing Minigames. The coordinator handles:
 * Managing which games are active
 * Player MatchMaking
 * Provisioning Backup servers
+* long running games (roblox tycoon styled)
 * Custom Events triggered by admins
 * and more to come soon!
 
