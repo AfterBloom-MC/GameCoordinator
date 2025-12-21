@@ -15,8 +15,11 @@ repositories {
 }
 
 dependencies {
-    compileOnly'io.papermc.paper:paper-api:1.21.4-R0.1-SNAPSHOT'
+    compileOnly 'io.papermc.paper:paper-api:1.21.4-R0.1-SNAPSHOT'
     implementation 'redis.clients:jedis:6.1.0'
+    implementation 'com.google.code.gson:gson:2.11.0'
+    implementation 'com.zaxxer:HikariCP:5.1.0'
+    implementation 'com.mysql:mysql-connector-j:8.3.0'
 }
 
 tasks {

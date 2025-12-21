@@ -9,9 +9,17 @@ description: GameCoordinator for AfterBloom MC Minigames
 website: https://www.afterbloom.net
 libraries:
   - redis.clients:jedis:6.1.0
+  - com.google.code.gson:gson:2.11.0
+  - com.zaxxer:HikariCP:5.1.0
+  - com.mysql:mysql-connector-j:8.3.0
 commands:
   coordinator:
-    description: Manage or the GameCoordinator
-    usage: /coordinator <testPing|servers>
+    description: Manage the GameCoordinator
+    usage: /coordinator <help|testpub|testsub>
     permission: minigames.manage
     permission-message: You do not have permission to use this command.
+
+  minigame:
+    description: Join and manage minigames
+    usage: /minigame <list|join>
+    aliases: [game, minigames]

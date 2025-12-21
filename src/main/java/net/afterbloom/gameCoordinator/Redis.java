@@ -11,16 +11,51 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
-import java.util.Arrays;
-import java.util.List;
-import java.util.ArrayList;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.google.gson.JsonArray;
 
 
 public class Redis {
+    // Utility to split two concatenated JSON objects: returns index after first object's closing brace
+    private static int findFirstJsonObjectEnd(String s) {
+        int depth = 0;
+        boolean inString = false;
+        boolean escaped = false;
+        boolean started = false;
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            if (inString) {
+                if (escaped) {
+                    escaped = false;
+                } else if (c == '\\') {
+                    escaped = true;
+                } else if (c == '"') {
+                    inString = false;
+                }
+                continue;
+            }
+            if (c == '"') {
+                inString = true;
+                continue;
+            }
+            if (c == '{') {
+                depth++;
+                started = true;
+            } else if (c == '}') {
+                depth--;
+                if (started && depth == 0) {
+                    return i + 1; // position right after first JSON object
+                }
+            }
+        }
+        return -1; // not found
+    }
     private static JedisPooled client;
     private static TrackingSubscriber defaultSubscriber;
     private static GameCoordinator plugin;
     private static final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+
 
     public static Exception init(GameCoordinator mainPlugin) {
         plugin = mainPlugin;
@@ -123,57 +158,108 @@ public class Redis {
             Logger logger = GameCoordinator.getLoggerInstance();
 
             String discoverChannel = plugin.getConfig().getString("discoverChannel");
+            String gameChannel = plugin.getConfig().getString("gameChannel");
             String coordinatorId = "coord-" + plugin.getConfig().getString("serverId");
-            if (channel.equals(discoverChannel)) {
-                try {
-                    com.google.gson.JsonObject json = com.google.gson.JsonParser.parseString(message).getAsJsonObject();
+            try {
+                // Parse only the first JSON object in the message to determine routing/function.
+                String trimmed = message.trim();
+                int firstEnd = findFirstJsonObjectEnd(trimmed);
+                String firstJsonStr = (firstEnd > 0) ? trimmed.substring(0, firstEnd) : trimmed;
+                JsonObject json = JsonParser.parseString(firstJsonStr).getAsJsonObject();
+                String receiverId = json.has("receiverId") ? json.get("receiverId").getAsString() : (json.has("recieverId") ? json.get("recieverId").getAsString() : "");
+                boolean addressedToUs = "*".equals(receiverId) || coordinatorId.equals(receiverId) || "coord-*".equals(receiverId);
 
-                    List<String> respondsTo = new ArrayList<>();
-                    respondsTo.add("*");
-                    respondsTo.add(coordinatorId);
-                    respondsTo.add("coord-*");
-
-                    String recieverId = json.get("recieverId").getAsString();
-
-                    if (respondsTo.contains(recieverId)){
-                        switch (json.get("function").getAsString()) {
-
-                            case "announceRunningServer":
-                                String gameServerId = json.get("senderId").getAsString();
-                                String gameId = json.get("serverGame").getAsString();
-                                Servers.newServer(gameServerId, gameId);
-
-
+                if (channel.equals(discoverChannel)) {
+                    if (addressedToUs) {
+                        String fn = json.has("function") ? json.get("function").getAsString() : "";
+                        switch (fn) {
+                            case "heartbeat":
+                                // Only treat as a game server heartbeat if serverGame is present
+                                if (json.has("serverGame")) {
+                                    Servers.newServer(
+                                            json.get("senderId").getAsString(),
+                                            json.get("serverGame").getAsString()
+                                    );
+                                } else {
+                                    // Coordinator heartbeat; no action needed here
+                                }
+                                break;
                             default:
-                                logger.info("Unknown function recieved.");
+                                // Unknown but addressed to us on discover
+                                GameCoordinator.getLoggerInstance().info("[Redis] Unknown function on discover: " + fn);
+                                break;
                         }
                     }
-                } catch (Exception e) {
-                    logger.severe("Failed to parse json on channel " + channel);
-                    logger.severe("Error: " + e.getMessage());
-                }
-
-                /*try {
-                    com.google.gson.JsonObject json = com.google.gson.JsonParser.parseString(message).getAsJsonObject();
-                    String recieveId = json.get("recieverId").getAsString();
-                    if ("heartbeat".equals(recieveId)) {
-                        String serverId = json.get("senderId").getAsString();
-                        String serverGame = json.get("serverGame").getAsString();
-                        Servers.newServer(serverId, serverGame);
+                } else if (channel.equals(gameChannel)) {
+                    if (addressedToUs) {
+                        String fn = json.has("function") ? json.get("function").getAsString() : "";
+                        switch (fn) {
+                            case "stats": {
+                                try {
+                                    // Support two-JSON concatenated message: first envelope, then stats map keyed by UUID
+                                    String s = message.trim();
+                                    int end = findFirstJsonObjectEnd(s);
+                                    if (end > 0 && end < s.length()) {
+                                        String first = s.substring(0, end).trim();
+                                        String second = s.substring(end).trim();
+                                        JsonObject env = JsonParser.parseString(first).getAsJsonObject();
+                                        JsonObject statsMap = JsonParser.parseString(second).getAsJsonObject();
+                                        String game = env.has("serverGame") ? env.get("serverGame").getAsString() : null;
+                                        if (game != null) {
+                                            StatsStorage.ingestStats(game, statsMap);
+                                            GameCoordinator.getLoggerInstance().info("[Stats] Ingested stats for game=" + game + " players=" + statsMap.size());
+                                        } else {
+                                            GameCoordinator.getLoggerInstance().warning("[Stats] Missing serverGame in stats envelope from " + (env.has("senderId") ? env.get("senderId").getAsString() : "unknown"));
+                                        }
+                                    } else {
+                                        GameCoordinator.getLoggerInstance().warning("[Stats] Could not split stats message into two JSON objects.");
+                                    }
+                                } catch (Exception ex) {
+                                    GameCoordinator.getLoggerInstance().severe("[Stats] Failed to process stats: " + ex.getMessage());
+                                }
+                                break;
+                            }
+                            case "findServerResult": {
+                                String player = json.get("player").getAsString();
+                                boolean accepted = json.get("accepted").getAsBoolean();
+                                if (accepted) {
+                                    // Clear queue and notify player; actual transfer mechanism to be implemented
+                                    Bukkit.getScheduler().runTask(Redis.plugin, () -> {
+                                        var p = Redis.plugin.getServer().getPlayerExact(player);
+                                        if (p != null) {
+                                            p.sendMessage("[Minigames] Found a server! Joining...");
+                                        }
+                                    });
+                                    Utils.clearPending(player);
+                                } else {
+                                    // Try next server in the player's queue
+                                    String game = Utils.getPendingGame(player);
+                                    if (game != null) {
+                                        MinigameCommand.tryNextServer(player, game);
+                                    } else {
+                                        // No game tracked; just clear
+                                        Utils.clearPending(player);
+                                    }
+                                }
+                                break;
+                            }
+                            default:
+                                // Unknown but addressed to us on game channel
+                                GameCoordinator.getLoggerInstance().info("[Redis] Unknown function on gameChannel: " + fn);
+                                break;
+                        }
                     }
-                } catch (Exception e) {
-                   logger.severe("Failed to parse server's reply: " + message);
-                }*/
+                }
+            } catch (Exception e) {
+                logger.severe("Failed to parse or handle json on channel " + channel + ": " + e.getMessage());
             }
 
-
-
+            // Snoop messages for admins
             Bukkit.getScheduler().runTask(Redis.plugin, () -> {
                 for (var player : Redis.plugin.getServer().getOnlinePlayers()) {
-                    if (player.hasPermission("minigames.manage")) {
+                    if (player.hasPermission("minigames.manage.snoop")) {
                         player.sendMessage("[Redis:" + channel + "] " + message);
                     }
-                    logger.info("Recived unknown message on channel: " + channel + "\n" + message);
                 }
             });
         }

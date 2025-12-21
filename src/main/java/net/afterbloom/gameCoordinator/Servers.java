@@ -4,6 +4,8 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
+import java.util.List;
 
 public class Servers {
     private static final Map<String, ServerEntry> servers = new ConcurrentHashMap<>();
@@ -12,8 +14,7 @@ public class Servers {
         ServerEntry entry = servers.get(serverId);
         if (entry == null) {
             servers.put(serverId, new ServerEntry(serverId, serverGame));
-            Logger logger = GameCoordinator.getLoggerInstance();
-            logger.info("[Servers] Registered new server: " + serverId + " (" + serverGame + ")");
+            GameCoordinator.getLoggerInstance().info("[Servers] Registered new server: " + serverId + " (" + serverGame + ")");
         } else {
             entry.refreshHeartbeat();
         }
@@ -30,6 +31,23 @@ public class Servers {
     public static void prune(long maxAgeSeconds) {
         long cutoff = Instant.now().getEpochSecond() - maxAgeSeconds;
         servers.entrySet().removeIf(e -> e.getValue().getLastSeen() < cutoff);
+    }
+
+    public static Map<String, ServerEntry> getServersByGame(String serverGame) {
+        return servers.entrySet()
+                .stream()
+                .filter(e -> e.getValue().getServerGame().equalsIgnoreCase(serverGame))
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        Map.Entry::getValue
+                ));
+    }
+
+    public static List<ServerEntry> getServersByGameSorted(String game) {
+        return getServersByGame(game).values()
+                .stream()
+                .sorted((a, b) -> a.getServerId().compareToIgnoreCase(b.getServerId()))
+                .toList();
     }
 
     public static class ServerEntry {

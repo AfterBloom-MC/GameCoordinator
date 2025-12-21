@@ -16,7 +16,6 @@ import java.util.logging.Logger;
 public class CoordinatorCommand implements CommandExecutor, TabCompleter {
 
     private static JavaPlugin plugin;
-    private static final Logger logger = GameCoordinator.getLoggerInstance();
 
     public CoordinatorCommand(GameCoordinator plugin) {
         CoordinatorCommand.plugin = plugin;
@@ -52,7 +51,7 @@ public class CoordinatorCommand implements CommandExecutor, TabCompleter {
                     sender.sendMessage("Redis test message sent!");
                 } catch (Exception e) {
                     sender.sendMessage("Redis test failed! " + e.getMessage());
-                    logger.severe("Redis test failed: " + e.getMessage());
+                    GameCoordinator.getLoggerInstance().severe("Redis test failed: " + e.getMessage());
                 }
                 return true;
 

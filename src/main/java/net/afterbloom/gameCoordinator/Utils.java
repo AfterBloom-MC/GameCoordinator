@@ -9,7 +9,7 @@ import java.nio.charset.StandardCharsets;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 import static java.net.URLEncoder.encode;
-
+import java.util.*;
 
 public class Utils {
 
@@ -35,7 +35,7 @@ public class Utils {
         //in our case, this is an **essential** plugin. I want to know it has shut down.. immediately
 
         //send webhook to warn of plugin failure
-        String message = plugin.getConfig().getString("webhookWarnMessage");
+        String message = plugin.getConfig().getString("webhookShutdownWarnMessage");
         Utils.sendDiscordWebhook(message);
     }
 
@@ -77,5 +77,29 @@ public class Utils {
                 .build();
 
         client.sendAsync(request, HttpResponse.BodyHandlers.discarding());
+    }
+
+
+    private static final Map<String, Queue<Servers.ServerEntry>> pendingJoins = new HashMap<>();
+    private static final Map<String, String> pendingGames = new HashMap<>();
+
+    public static void initPending(String player, String game, List<Servers.ServerEntry> servers) {
+        pendingJoins.put(player, new ArrayDeque<>(servers));
+        pendingGames.put(player, game);
+    }
+
+    public static Servers.ServerEntry nextServer(String player) {
+        Queue<Servers.ServerEntry> q = pendingJoins.get(player);
+        if (q == null || q.isEmpty()) return null;
+        return q.poll();
+    }
+
+    public static String getPendingGame(String player) {
+        return pendingGames.get(player);
+    }
+
+    public static void clearPending(String player) {
+        pendingJoins.remove(player);
+        pendingGames.remove(player);
     }
 }
