@@ -48,10 +48,10 @@ Channel: `discoverChannel`
 ### 2) Coordinator heartbeat (coordinator → broadcast)
 Channel: `discoverChannel`, sent every 10 seconds
 ```json
-{ "receiverId": "*", "senderId": "coord-<id>", "function": "heartbeat" }
+{ "receiverId": "*", "senderId": "coord-<id>", "function": "heartbeat", "playerCount": 10, "lobbyCount": 1, "serverGame": "lobby" }
 ```
 
-Note: game servers should ignore this unless they specifically need to track coordinator liveness. The coordinator will not create server entries from coordinator heartbeats.
+Note: Coordinators track each other to ensure "Total Players" placeholders are accurate across the network. If `serverGame` is present, it's also tracked as a game server.
 
 ### 3) Game server heartbeat (game → coordinator)
 Channel: `discoverChannel`
@@ -120,10 +120,10 @@ Channel: `gameChannel` (or future `proxyChannel`)
 
 If PlaceholderAPI is installed, the following placeholders are available:
 
-- `%gamecoordinator_total_players%`: Total number of players across all tracked servers.
-- `%gamecoordinator_players_<gametype>%`: Total number of players in a specific game type.
-- `%gamecoordinator_servers_<gametype>%`: Number of servers hosting a specific game type.
-- `%gamecoordinator_lobbies_<gametype>%`: Total number of lobbies for a specific game type.
+- `%gamecoordinator_total_players%`: Total number of players across all tracked remote servers (including other coordinators) AND the current coordinator server.
+- `%gamecoordinator_players_<gametype>%`: Total number of players in a specific game type. (Includes the current server if `serverGame` is configured in `config.yml`)
+- `%gamecoordinator_servers_<gametype>%`: Number of servers hosting a specific game type. (Includes the current server if `serverGame` matches)
+- `%gamecoordinator_lobbies_<gametype>%`: Total number of lobbies for a specific game type. (Includes the current server as 1 lobby if `serverGame` matches)
 - `%gamecoordinator_playtime_total%`: Player's total playtime across all minigames (formatted).
 - `%gamecoordinator_playtime_<gametype>%`: Player's total playtime in a specific game type (formatted).
 

@@ -22,6 +22,10 @@ discoverChannel: "discover"
 #The channel that will be used for normal game communications (matchmaking, join, etc.)
 gameChannel: "game"
 
+# Optional: If this coordinator server also hosts players (e.g. a lobby), 
+# you can specify the game type here to have it included in game-specific placeholders.
+# serverGame: "lobby"
+
 # Database (MySQL/MariaDB) configuration for stats storage
 mysql:
   host: "127.0.0.1"

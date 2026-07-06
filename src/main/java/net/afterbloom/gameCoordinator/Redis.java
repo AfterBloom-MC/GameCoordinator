@@ -175,16 +175,25 @@ public class Redis {
                         Utils.debugLog("[Redis] Received discover message: function=" + fn + " from=" + (json.has("senderId") ? json.get("senderId").getAsString() : "unknown"));
                         switch (fn) {
                             case "heartbeat":
+                                String senderId = json.has("senderId") ? json.get("senderId").getAsString() : "unknown";
+                                if (senderId.equals(coordinatorId)) break; // Ignore our own heartbeat
+
                                 // Only treat as a game server heartbeat if serverGame is present
                                 if (json.has("serverGame")) {
                                     Servers.newServer(
-                                            json.get("senderId").getAsString(),
+                                            senderId,
                                             json.get("serverGame").getAsString(),
                                             json.has("playerCount") ? json.get("playerCount").getAsInt() : 0,
                                             json.has("lobbyCount") ? json.get("lobbyCount").getAsInt() : 0
                                     );
-                                } else {
-                                    // Coordinator heartbeat; no action needed here
+                                } else if (senderId.startsWith("coord-")) {
+                                    // Other coordinator heartbeat; register it as a coordinator server
+                                    Servers.newServer(
+                                            senderId,
+                                            "coordinator",
+                                            json.has("playerCount") ? json.get("playerCount").getAsInt() : 0,
+                                            json.has("lobbyCount") ? json.get("lobbyCount").getAsInt() : 0
+                                    );
                                 }
                                 break;
                             default:

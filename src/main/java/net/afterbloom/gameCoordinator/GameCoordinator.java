@@ -2,6 +2,7 @@ package net.afterbloom.gameCoordinator;
 
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.Bukkit;
+import com.google.gson.JsonObject;
 
 import java.util.logging.Logger;
 
@@ -82,8 +83,20 @@ public final class GameCoordinator extends JavaPlugin {
         final String coordinatorSenderId = "coord-" + getConfig().getString("serverId");
         Bukkit.getScheduler().runTaskTimer(this, () -> {
             try {
-                String heartbeatJson = "{\"receiverId\":\"*\",\"senderId\":\"" + coordinatorSenderId + "\",\"function\":\"heartbeat\"}";
-                Redis.publish(discoverChannel, heartbeatJson);
+                JsonObject heartbeat = new JsonObject();
+                heartbeat.addProperty("receiverId", "*");
+                heartbeat.addProperty("senderId", coordinatorSenderId);
+                heartbeat.addProperty("function", "heartbeat");
+                heartbeat.addProperty("playerCount", Bukkit.getOnlinePlayers().size());
+                
+                // If it's acting as a game server, we might want to include lobbyCount as well
+                String localGame = getConfig().getString("serverGame");
+                if (localGame != null) {
+                    heartbeat.addProperty("serverGame", localGame);
+                    heartbeat.addProperty("lobbyCount", 1);
+                }
+
+                Redis.publish(discoverChannel, heartbeat.toString());
             } catch (Exception e) {
                 GameCoordinator.getLoggerInstance().severe("Failed to publish coordinator heartbeat: " + e.getMessage());
             }
