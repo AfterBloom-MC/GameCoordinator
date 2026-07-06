@@ -172,6 +172,7 @@ public class Redis {
                 if (channel.equals(discoverChannel)) {
                     if (addressedToUs) {
                         String fn = json.has("function") ? json.get("function").getAsString() : "";
+                        Utils.debugLog("[Redis] Received discover message: function=" + fn + " from=" + (json.has("senderId") ? json.get("senderId").getAsString() : "unknown"));
                         switch (fn) {
                             case "heartbeat":
                                 // Only treat as a game server heartbeat if serverGame is present
@@ -195,6 +196,7 @@ public class Redis {
                 } else if (channel.equals(gameChannel)) {
                     if (addressedToUs) {
                         String fn = json.has("function") ? json.get("function").getAsString() : "";
+                        Utils.debugLog("[Redis] Received game message: function=" + fn + " from=" + (json.has("senderId") ? json.get("senderId").getAsString() : "unknown"));
                         switch (fn) {
                             case "stats": {
                                 try {

@@ -54,6 +54,8 @@ public class MinigameCommand implements CommandExecutor, TabCompleter {
                              @NotNull String label,
                              @NotNull String[] args) {
 
+        Utils.debugLog("[MinigameCommand] " + sender.getName() + " executed /minigame " + String.join(" ", args));
+
         if (args.length == 0) {
             sender.sendMessage("Available minigames: /minigame list");
             return true;

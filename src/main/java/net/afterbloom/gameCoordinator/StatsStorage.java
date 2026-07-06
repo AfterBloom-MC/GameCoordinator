@@ -90,6 +90,7 @@ public final class StatsStorage {
     }
 
     private static void ingestToGame(String game, JsonObject statsByUuid) throws SQLException {
+        Utils.debugLog("[StatsStorage] Ingesting stats for game: " + game + " (" + statsByUuid.size() + " players)");
         ensureTablesForGame(game);
 
         // Collect all stat keys to ensure columns

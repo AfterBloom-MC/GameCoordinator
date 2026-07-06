@@ -21,6 +21,12 @@ public class Utils {
         plugin = mainPlugin;
     }
 
+    public static void debugLog(String message) {
+        if (plugin.getConfig().getBoolean("debug", false)) {
+            GameCoordinator.getLoggerInstance().info("[DEBUG] " + message);
+        }
+    }
+
     public static void shutdown(String error) {
         if (hasShutdown) return;  //prevents double execution
         hasShutdown = true;

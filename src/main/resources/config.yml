@@ -32,4 +32,7 @@ mysql:
   useSSL: false
   allowPublicKeyRetrieval: true
 
+# Enable debug logging for more verbose output
+debug: false
+
 #sera is smelly

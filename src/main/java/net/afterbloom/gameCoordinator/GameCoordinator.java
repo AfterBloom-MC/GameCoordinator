@@ -93,10 +93,25 @@ public final class GameCoordinator extends JavaPlugin {
         Bukkit.getScheduler().runTaskTimer(this, () -> Servers.prune(90), 20L * 60, 20L * 60);
 
         // Register PlaceholderAPI expansion if available
-        if (Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
-            new GameCoordinatorPlaceholders(this).register();
-            GameCoordinator.getLoggerInstance().info("PlaceholderAPI expansion registered.");
-        }
+        Bukkit.getScheduler().runTask(this, () -> {
+            Utils.debugLog("Checking for PlaceholderAPI (post-startup)...");
+            if (Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
+                Utils.debugLog("PlaceholderAPI found! Registering expansion...");
+                try {
+                    boolean registered = new GameCoordinatorPlaceholders(this).register();
+                    if (registered) {
+                        GameCoordinator.getLoggerInstance().info("PlaceholderAPI expansion registered successfully.");
+                    } else {
+                        GameCoordinator.getLoggerInstance().warning("PlaceholderAPI expansion failed to register.");
+                    }
+                } catch (Exception e) {
+                    GameCoordinator.getLoggerInstance().severe("Error while registering PlaceholderAPI expansion: " + e.getMessage());
+                    e.printStackTrace();
+                }
+            } else {
+                Utils.debugLog("PlaceholderAPI not found on this server.");
+            }
+        });
 
     }
 
