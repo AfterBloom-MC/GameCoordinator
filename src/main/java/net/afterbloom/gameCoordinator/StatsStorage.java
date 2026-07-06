@@ -81,6 +81,15 @@ public final class StatsStorage {
     public static void ingestStats(String gameRaw, JsonObject statsByUuid) throws SQLException {
         if (dataSource == null) throw new IllegalStateException("StatsStorage not initialized");
         String game = normalizeIdentifier(gameRaw, 48); // keep room for suffixes in table name
+        
+        ingestToGame(game, statsByUuid);
+        ingestToGame("global", statsByUuid);
+
+        knownGames.add(game);
+        knownGames.add("global");
+    }
+
+    private static void ingestToGame(String game, JsonObject statsByUuid) throws SQLException {
         ensureTablesForGame(game);
 
         // Collect all stat keys to ensure columns
@@ -99,7 +108,7 @@ public final class StatsStorage {
             c.setAutoCommit(false);
             for (Slice slice : Slice.values()) {
                 String table = tableName(game, slice);
-                // Prepare dynamic SQL for this batch; we will reuse per player by setting params
+                // Build INSERT ... ON DUPLICATE KEY UPDATE statement dynamically
                 for (Map.Entry<String, JsonElement> e : statsByUuid.entrySet()) {
                     String uuidStr = e.getKey();
                     if (!isValidUuid(uuidStr)) {
@@ -109,7 +118,6 @@ public final class StatsStorage {
                     JsonObject obj = e.getValue() != null && e.getValue().isJsonObject() ? e.getValue().getAsJsonObject() : new JsonObject();
                     if (obj.entrySet().isEmpty()) continue;
 
-                    // Build INSERT ... ON DUPLICATE KEY UPDATE statement dynamically
                     StringBuilder cols = new StringBuilder("player_uuid");
                     StringBuilder vals = new StringBuilder("?");
                     StringBuilder updates = new StringBuilder();
@@ -137,11 +145,33 @@ public final class StatsStorage {
                 }
             }
             c.commit();
-        } catch (SQLException ex) {
-            throw ex;
         }
+    }
 
-        knownGames.add(game);
+    public static Double getStat(String uuid, String gameRaw, String statKey, Slice slice) {
+        if (dataSource == null) return 0.0;
+        String game = normalizeIdentifier(gameRaw, 48);
+        String table = tableName(game, slice);
+        String col = normalizeIdentifier(statKey, 64);
+        
+        try (Connection c = dataSource.getConnection()) {
+            // Check if column exists first to avoid SQLException
+            Set<String> existing = getExistingColumns(c, table);
+            if (!existing.contains(col)) return 0.0;
+
+            String sql = "SELECT `" + col + "` FROM `" + table + "` WHERE player_uuid = ?";
+            try (PreparedStatement ps = c.prepareStatement(sql)) {
+                ps.setString(1, uuid);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        return rs.getDouble(1);
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            GameCoordinator.getLoggerInstance().warning("[StatsStorage] Failed to fetch stat " + statKey + " for " + uuid + " in " + game + ": " + e.getMessage());
+        }
+        return 0.0;
     }
 
     // Ensure per-game tables exist

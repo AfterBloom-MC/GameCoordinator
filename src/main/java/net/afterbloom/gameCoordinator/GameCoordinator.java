@@ -92,6 +92,12 @@ public final class GameCoordinator extends JavaPlugin {
         // Schedule periodic prune of stale servers (every 60s, prune entries older than 90s)
         Bukkit.getScheduler().runTaskTimer(this, () -> Servers.prune(90), 20L * 60, 20L * 60);
 
+        // Register PlaceholderAPI expansion if available
+        if (Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
+            new GameCoordinatorPlaceholders(this).register();
+            GameCoordinator.getLoggerInstance().info("PlaceholderAPI expansion registered.");
+        }
+
     }
 
     @Override

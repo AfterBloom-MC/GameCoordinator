@@ -56,9 +56,10 @@ Note: game servers should ignore this unless they specifically need to track coo
 ### 3) Game server heartbeat (game → coordinator)
 Channel: `discoverChannel`
 ```json
-{ "receiverId": "coord-*", "senderId": "game-<id>", "serverGame": "<gameName>", "function": "heartbeat" }
+{ "receiverId": "coord-*", "senderId": "game-<id>", "serverGame": "<gameName>", "playerCount": 10, "lobbyCount": 1, "function": "heartbeat" }
 ```
 - On receipt, the coordinator updates/creates an entry for the game server and refreshes its last‑seen timestamp.
+- `playerCount` and `lobbyCount` are optional (default to 0 if omitted).
 
 ### 4) Find server request (coordinator → game)
 Channel: `gameChannel`
@@ -87,14 +88,15 @@ Envelope:
 Stats payload (immediately following in the same message):
 ```json
 {
-  "<uuid-1>": { "kills": 5, "wins": 1 },
-  "<uuid-2>": { "kills": 2, "wins": 0 }
+  "<uuid-1>": { "kills": 5, "wins": 1, "playtime": 15 },
+  "<uuid-2>": { "kills": 2, "wins": 0, "playtime": 10 }
 }
 ```
 Coordinator behavior:
 - Validates `receiverId` addressing and presence of `serverGame` in the envelope.
 - Persists stats in per‑game, columnar tables with four time slices: total, weekly, monthly, yearly.
-  - Table names: `<game>_stats_total`, `<game>_stats_weekly`, `<game>_stats_monthly`, `<game>_stats_yearly` (game id normalized to `[a-z0-9_]`).
+- Also persists an aggregate "global" version of every stat across all minigames (table prefix `global_stats_`).
+  - Table names: `<game>_stats_total`, `<game>_stats_weekly`, etc., AND `global_stats_total`, `global_stats_weekly`, etc.
   - Row key: `player_uuid` (CHAR(36) PRIMARY KEY).
   - Stats keys become DOUBLE columns; new keys will transparently `ALTER TABLE ADD COLUMN`.
   - Incoming values are treated as deltas and added to the current values (increment), not set.
@@ -113,6 +115,17 @@ Channel: `gameChannel` (or future `proxyChannel`)
 ```json
 { "receiverId": "coord-<id>", "senderId": "proxy-<id>", "function": "sendPlayerResult", "player": "<PlayerName>", "destinationServer": "game-<id>", "success": true }
 ```
+
+## PlaceholderAPI
+
+If PlaceholderAPI is installed, the following placeholders are available:
+
+- `%gamecoordinator_total_players%`: Total number of players across all tracked servers.
+- `%gamecoordinator_players_<gametype>%`: Total number of players in a specific game type.
+- `%gamecoordinator_servers_<gametype>%`: Number of servers hosting a specific game type.
+- `%gamecoordinator_lobbies_<gametype>%`: Total number of lobbies for a specific game type.
+- `%gamecoordinator_playtime_total%`: Player's total playtime across all minigames (formatted).
+- `%gamecoordinator_playtime_<gametype>%`: Player's total playtime in a specific game type (formatted).
 
 ## Implementation notes
 

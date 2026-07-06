@@ -4,7 +4,7 @@ plugins {
 }
 
 group = 'net.afterbloom'
-version = '1.0-SNAPSHOT'
+version = '1.0.1-SNAPSHOT'
 
 repositories {
     mavenCentral()
@@ -12,10 +12,14 @@ repositories {
         name = "papermc-repo"
         url = "https://repo.papermc.io/repository/maven-public/"
     }
+    maven {
+        url = 'https://repo.extendedclip.com/content/repositories/placeholderapi/'
+    }
 }
 
 dependencies {
     compileOnly 'io.papermc.paper:paper-api:1.21.4-R0.1-SNAPSHOT'
+    compileOnly 'me.clip:placeholderapi:2.11.6'
     implementation 'redis.clients:jedis:6.1.0'
     implementation 'com.google.code.gson:gson:2.11.0'
     implementation 'com.zaxxer:HikariCP:5.1.0'

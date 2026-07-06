@@ -178,7 +178,9 @@ public class Redis {
                                 if (json.has("serverGame")) {
                                     Servers.newServer(
                                             json.get("senderId").getAsString(),
-                                            json.get("serverGame").getAsString()
+                                            json.get("serverGame").getAsString(),
+                                            json.has("playerCount") ? json.get("playerCount").getAsInt() : 0,
+                                            json.has("lobbyCount") ? json.get("lobbyCount").getAsInt() : 0
                                     );
                                 } else {
                                     // Coordinator heartbeat; no action needed here
@@ -212,7 +214,7 @@ public class Redis {
                                             GameCoordinator.getLoggerInstance().warning("[Stats] Missing serverGame in stats envelope from " + (env.has("senderId") ? env.get("senderId").getAsString() : "unknown"));
                                         }
                                     } else {
-                                        GameCoordinator.getLoggerInstance().warning("[Stats] Could not split stats message into two JSON objects.");
+                                        GameCoordinator.getLoggerInstance().warning("[Stats] Could not split stats message into two JSON objects. Dumping message:" + s);
                                     }
                                 } catch (Exception ex) {
                                     GameCoordinator.getLoggerInstance().severe("[Stats] Failed to process stats: " + ex.getMessage());

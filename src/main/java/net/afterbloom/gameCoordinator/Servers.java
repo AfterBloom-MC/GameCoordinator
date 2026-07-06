@@ -10,13 +10,13 @@ import java.util.List;
 public class Servers {
     private static final Map<String, ServerEntry> servers = new ConcurrentHashMap<>();
 
-    public static void newServer(String serverId, String serverGame) {
+    public static void newServer(String serverId, String serverGame, int playerCount, int lobbyCount) {
         ServerEntry entry = servers.get(serverId);
         if (entry == null) {
-            servers.put(serverId, new ServerEntry(serverId, serverGame));
-            GameCoordinator.getLoggerInstance().info("[Servers] Registered new server: " + serverId + " (" + serverGame + ")");
+            servers.put(serverId, new ServerEntry(serverId, serverGame, playerCount, lobbyCount));
+            GameCoordinator.getLoggerInstance().info("[Servers] Registered new server: " + serverId + " (" + serverGame + ") with " + playerCount + " players and " + lobbyCount + " lobbies.");
         } else {
-            entry.refreshHeartbeat();
+            entry.update(playerCount, lobbyCount);
         }
     }
 
@@ -54,10 +54,14 @@ public class Servers {
         private final String serverId;
         private final String serverGame;
         private volatile long lastSeen;
+        private volatile int playerCount;
+        private volatile int lobbyCount;
 
-        public ServerEntry(String serverId, String serverGame) {
+        public ServerEntry(String serverId, String serverGame, int playerCount, int lobbyCount) {
             this.serverId = serverId;
             this.serverGame = serverGame;
+            this.playerCount = playerCount;
+            this.lobbyCount = lobbyCount;
             this.lastSeen = Instant.now().getEpochSecond();
         }
 
@@ -71,6 +75,20 @@ public class Servers {
 
         public long getLastSeen() {
             return lastSeen;
+        }
+
+        public int getPlayerCount() {
+            return playerCount;
+        }
+
+        public int getLobbyCount() {
+            return lobbyCount;
+        }
+
+        private void update(int playerCount, int lobbyCount) {
+            this.playerCount = playerCount;
+            this.lobbyCount = lobbyCount;
+            this.lastSeen = Instant.now().getEpochSecond();
         }
 
         private void refreshHeartbeat() {
