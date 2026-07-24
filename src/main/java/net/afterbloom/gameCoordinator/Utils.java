@@ -22,9 +22,7 @@ public class Utils {
     }
 
     public static void debugLog(String message) {
-        if (plugin.getConfig().getBoolean("debug", false)) {
-            GameCoordinator.getLoggerInstance().info("[DEBUG] " + message);
-        }
+        GameCoordinator.getLoggerInstance().info("[DEBUG] " + message);
     }
 
     public static void shutdown(String error) {
@@ -73,8 +71,20 @@ public class Utils {
 
     public static void sendDiscordWebhook(String message){
         String webhookUrl = plugin.getConfig().getString("webhookUrl");
+        sendDiscordWebhookToUrl(webhookUrl, message);
+    }
 
-        String jsonPayload = "{\"content\":\"" + message + "\"}";
+    public static void sendReportWebhook(String message) {
+        String webhookUrl = plugin.getConfig().getString("reportWebhookUrl");
+        if (webhookUrl != null && !webhookUrl.isEmpty()) {
+            sendDiscordWebhookToUrl(webhookUrl, message);
+        }
+    }
+
+    private static void sendDiscordWebhookToUrl(String webhookUrl, String message) {
+        if (webhookUrl == null || webhookUrl.isEmpty()) return;
+
+        String jsonPayload = "{\"content\":\"" + message.replace("\"", "\\\"") + "\"}";
 
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(webhookUrl))

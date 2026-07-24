@@ -1,0 +1,15 @@
+# Custom placeholders for Supporter mode
+# You can define custom placeholders that sum up players across specific servers or games.
+# Usage in PlaceholderAPI: %gamecoordinator_custom_PLACEHOLDERNAME%
+
+placeholders:
+  lobby_total:
+    servers:
+      - "coord-01"
+      - "coord-02"
+    games:
+      - "lobby"
+  survival_total:
+    games:
+      - "survival"
+      - "smp"

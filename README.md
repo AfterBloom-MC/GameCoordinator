@@ -60,15 +60,32 @@ Channel: `discoverChannel`
 ```
 - On receipt, the coordinator updates/creates an entry for the game server and refreshes its last‑seen timestamp.
 - `playerCount` and `lobbyCount` are optional (default to 0 if omitted).
+- Note: Supporter mode servers use these heartbeats only to track individual servers. For the global total player count, they use `requestTotalPlayers`.
 
-### 4) Find server request (coordinator → game)
+### 4) Request total players (supporter → coordinators)
+Channel: `discoverChannel`
+```json
+{ "receiverId": "coord-*", "senderId": "supporter-<id>", "function": "requestTotalPlayers", "requestId": 123456789 }
+```
+- Used by servers in supporter mode to ask coordinators for the calculated network-wide player total.
+- `requestId` should be a unique timestamp or incrementing long to correlate responses.
+
+### 5) Total players response (coordinator → supporter)
+Channel: `discoverChannel`
+```json
+{ "receiverId": "supporter-<id>", "senderId": "coord-<id>", "function": "totalPlayersResponse", "totalPlayers": 100, "requestId": 123456789 }
+```
+- A coordinator replies with its currently calculated total.
+- The supporter uses the `requestId` to ensure it only updates its cache with the most recent information.
+
+### 6) Find server request (coordinator → game)
 Channel: `gameChannel`
 ```json
 { "receiverId": "game-<id>", "senderId": "coord-<id>", "function": "findServer", "player": "<PlayerName>" }
 ```
 - Initiates matchmaking for a given player on a specific target server from the queue.
 
-### 5) Find server result (game → coordinator)
+### 7) Find server result (game → coordinator)
 Channel: `gameChannel`
 ```json
 { "receiverId": "coord-<id>", "senderId": "game-<id>", "function": "findServerResult", "player": "<PlayerName>", "accepted": true }
@@ -76,7 +93,7 @@ Channel: `gameChannel`
 - If `accepted` is `true`, the coordinator clears the player’s queue and proceeds to transfer.
 - If `false`, the coordinator moves on to the next queued server for that player.
 
-### 6) End-of-game stats (game → coordinator)
+### 8) End-of-game stats (game → coordinator)
 Channel: `gameChannel`
 
 Two-JSON message format sent in a single Redis publish. First JSON is the envelope, second JSON is a map of player UUID → stat object.
@@ -96,21 +113,21 @@ Coordinator behavior:
 - Validates `receiverId` addressing and presence of `serverGame` in the envelope.
 - Persists stats in per‑game, columnar tables with four time slices: total, weekly, monthly, yearly.
 - Also persists an aggregate "global" version of every stat across all minigames (table prefix `global_stats_`).
-  - Table names: `<game>_stats_total`, `<game>_stats_weekly`, etc., AND `global_stats_total`, `global_stats_weekly`, etc.
-  - Row key: `player_uuid` (CHAR(36) PRIMARY KEY).
-  - Stats keys become DOUBLE columns; new keys will transparently `ALTER TABLE ADD COLUMN`.
-  - Incoming values are treated as deltas and added to the current values (increment), not set.
+- Table names: `<game>_stats_total`, `<game>_stats_weekly`, etc., AND `global_stats_total`, `global_stats_weekly`, etc.
+- Row key: `player_uuid` (CHAR(36) PRIMARY KEY).
+- Stats keys become DOUBLE columns; new keys will transparently `ALTER TABLE ADD COLUMN`.
+- Incoming values are treated as deltas and added to the current values (increment), not set.
 - Before each time-slice reset (weekly: Mondays 00:00; monthly: 1st 00:00; yearly: Jan 1st 00:00 — server timezone), the table is backed up to a JSON file under `plugins/GameCoordinator/Stats-Data-Historical/<game>/<slice>/` and then truncated.
 - Logs the number of players ingested. Malformed UUID keys are skipped.
 
-### 7) Send player (coordinator → proxy)
+### 9) Send player (coordinator → proxy)
 Channel: `gameChannel` (or future `proxyChannel`)
 ```json
 { "receiverId": "proxy", "senderId": "coord-<id>", "function": "sendPlayer", "destinationServer": "game-<id>", "player": "<PlayerName>" }
 ```
 - The Velocity proxy listens for this and connects the player to `destinationServer`.
 
-### 8) Send player result (proxy → coordinator) [optional]
+### 10) Send player result (proxy → coordinator) [optional]
 Channel: `gameChannel` (or future `proxyChannel`)
 ```json
 { "receiverId": "coord-<id>", "senderId": "proxy-<id>", "function": "sendPlayerResult", "player": "<PlayerName>", "destinationServer": "game-<id>", "success": true }

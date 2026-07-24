@@ -62,7 +62,7 @@ public class GameCoordinatorPlaceholders extends PlaceholderExpansion {
         if (player == null) return "";
 
         // Check global cache first for non-player specific placeholders
-        if (params.equals("total_players") || params.startsWith("players_") || params.startsWith("servers_") || params.startsWith("lobbies_")) {
+        if (params.equals("total_players") || params.startsWith("players_") || params.startsWith("servers_") || params.startsWith("lobbies_") || params.startsWith("custom_")) {
             CacheEntry<String> entry = globalCache.get(params);
             if (entry != null && !entry.isExpired()) {
                 return entry.value;
@@ -95,45 +95,43 @@ public class GameCoordinatorPlaceholders extends PlaceholderExpansion {
     }
 
     private String computeGlobalPlaceholder(String params) {
-        String localGame = plugin.getConfig().getString("serverGame");
-        int localPlayerCount = plugin.getServer().getOnlinePlayers().size();
-
         if (params.equals("total_players")) {
-            int remotePlayers = Servers.getServers().values().stream()
-                    .mapToInt(Servers.ServerEntry::getPlayerCount)
-                    .sum();
-            return String.valueOf(remotePlayers + localPlayerCount);
+            return String.valueOf(Servers.getNetworkTotalPlayers());
         }
 
         if (params.startsWith("players_")) {
             String gameType = params.substring(8);
-            int remotePlayers = Servers.getServersByGame(gameType).values().stream()
-                    .mapToInt(Servers.ServerEntry::getPlayerCount)
-                    .sum();
-            if (gameType.equalsIgnoreCase(localGame)) {
-                remotePlayers += localPlayerCount;
-            }
-            return String.valueOf(remotePlayers);
+            return String.valueOf(Servers.getGameStats(gameType).players);
         }
 
         if (params.startsWith("servers_")) {
             String gameType = params.substring(8);
-            int count = Servers.getServersByGame(gameType).size();
-            if (gameType.equalsIgnoreCase(localGame)) {
-                count++;
-            }
-            return String.valueOf(count);
+            return String.valueOf(Servers.getGameStats(gameType).servers);
         }
 
         if (params.startsWith("lobbies_")) {
             String gameType = params.substring(8);
-            int count = Servers.getServersByGame(gameType).values().stream()
-                    .mapToInt(Servers.ServerEntry::getLobbyCount)
-                    .sum();
-            if (gameType.equalsIgnoreCase(localGame)) {
-                count++;
+            return String.valueOf(Servers.getGameStats(gameType).lobbies);
+        }
+
+        if (params.startsWith("custom_")) {
+            String key = params.substring(7);
+            SupporterConfig.CustomPlaceholder cp = plugin.getSupporterConfig().getCustomPlaceholders().get(key);
+            if (cp == null) return null;
+
+            int total = 0;
+            // Add players from specific servers
+            for (String serverId : cp.getServers()) {
+                Servers.ServerEntry se = Servers.getServer(serverId);
+                if (se != null) {
+                    total += se.getPlayerCount();
+                }
             }
-            return String.valueOf(count);
+            // Add players from specific games
+            for (String game : cp.getGames()) {
+                total += Servers.getGameStats(game).players;
+            }
+            return String.valueOf(total);
         }
         return null;
     }

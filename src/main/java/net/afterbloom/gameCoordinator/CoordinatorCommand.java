@@ -41,6 +41,7 @@ public class CoordinatorCommand implements CommandExecutor, TabCompleter {
             case "help":
                 sender.sendMessage("Game Coordinator help:\n" +
                         "/coordinator help - show this message\n" +
+                        "/coordinator reload - reload supporter.yml configuration\n" +
                         "/coordinator testpub - sends a message on the 'test' channel\n" +
                         "/coordinator testsub - toggles a listener on the 'test' channel");
                 return true;
@@ -64,6 +65,15 @@ public class CoordinatorCommand implements CommandExecutor, TabCompleter {
                     sender.sendMessage("Subscribed to 'test' channel. Incoming messages will log to console.");
                 }
                 return true;
+
+            case "reload":
+                if (plugin instanceof GameCoordinator gc) {
+                    gc.getSupporterConfig().load();
+                    sender.sendMessage("Reloaded supporter.yml configurations.");
+                } else {
+                    sender.sendMessage("Error: Plugin is not an instance of GameCoordinator.");
+                }
+                return true;
         }
 
         return true;
@@ -77,7 +87,7 @@ public class CoordinatorCommand implements CommandExecutor, TabCompleter {
 
         if (!sender.hasPermission("minigames.manage")) return Collections.emptyList();
 
-        List<String> topLevel = List.of("testsub", "testpub", "help");
+        List<String> topLevel = List.of("testsub", "testpub", "help", "reload");
 
         if (args.length == 1) {
             String partial = args[0].toLowerCase();

@@ -24,3 +24,27 @@ commands:
     description: Join and manage minigames
     usage: /minigame <list|join>
     aliases: [game, minigames]
+
+  report:
+    description: Report a player
+    usage: /report [player] [reason]
+
+  follow-player:
+    description: Follow a player to their server in vanish
+    usage: /follow-player [player]
+    permission: minigames.staff.follow
+
+  find:
+    description: Find a player on the network
+    usage: /find [player]
+    permission: minigames.staff.find
+
+  mgtp:
+    description: Teleport to a player on the network in vanish
+    usage: /mgtp [player]
+    permission: minigames.staff
+
+  staffmode:
+    description: Toggle staff mode (vanish + spectator)
+    usage: /staffmode
+    permission: minigames.staff

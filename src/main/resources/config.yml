@@ -9,6 +9,8 @@ redisPassword: "password"
 webhookUrl: "https://discord.com/api/webhooks/1234/blabla"
 #webhook message for warning on plugin shutdown (will not run on server shutdown)
 webhookShutdownWarnMessage: "<@USERID> GameCoordinator has shut down!"
+# Webhook URL for in-game quick reports
+reportWebhookUrl: "https://discord.com/api/webhooks/1234/blabla"
 
 
 #what number will this coordinator server be known as by other servers? (two digits is recommended)
@@ -38,5 +40,9 @@ mysql:
 
 # Enable debug logging for more verbose output
 debug: false
+
+# Supporter mode disables normal coordinator features but keeps database and redis connections
+# for placeholders and API usage.
+supporterMode: false
 
 #sera is smelly
